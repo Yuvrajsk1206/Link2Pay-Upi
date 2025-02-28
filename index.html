@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link2Pay</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #007BFF, #232F3E); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .card { background: white; border-radius: 25px; box-shadow: 3 10px 30px rgba(0, 0, 0, 0.1); width: 100%; max-width: 400px; padding: 30px; text-align: center; }
+        h1 { font-size: 30px; color: #333; margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; transition: border-color 0.3s; }
+        input:focus, textarea:focus { border-color: #6e8efb; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; color: white; cursor: pointer; transition: transform 0.2s, opacity 0.2s; }
+        button:hover { transform: translateY(-2px); opacity: 1.2; }
+        #generateBtn { background: #6e8efb; }
+        #copyLinkBtn { background: #ff9800; margin-top: 10px; }
+        #shareBtn { background: #25D366; display: none; margin-top: 10px; }
+        #qrCode { margin-top: 20px; display: none; }
+        #upiLink { color: #6e8efb; font-size: 14px; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Link2Pay Upi</h1>
+        <form id="paymentForm" onsubmit="event.preventDefault(); generateUPILink();">
+            <div class="input-group"><input type="text" id="name" placeholder="Your Name" required></div>
+            <div class="input-group"><input type="text" id="upiId" placeholder="UPI ID (e.g., xxx@upi)" required></div>
+            <div class="input-group"><input type="number" id="amount" placeholder="Amount (₹)" min="1" required></div>
+            <div class="input-group"><textarea id="note" placeholder="Payment Note (Optional)" rows="2"></textarea></div>
+            <button id="generateBtn" type="submit">Generate Link & QR</button>
+        </form>
+        <div id="result">
+            <p id="upiLink"></p>
+            <img id="qrCode" src="" alt="QR Code" />
+            <button id="copyLinkBtn" onclick="copyUPILink()">Copy Link</button>
+            <button id="shareBtn" onclick="shareOnWhatsApp()">Share on WhatsApp</button>
+        </div>
+    </div>
+
+    <script>
+        let upiLink = '';
+
+        function isValidUPI(upiId) {
+            const upiRegex = /^[\w.-]+@[\w]+$/;
+            return upiRegex.test(upiId);
+        }
+
+        function generateUPILink() {
+            const name = document.getElementById('name').value.trim();
+            const upiId = document.getElementById('upiId').value.trim();
+            const amount = document.getElementById('amount').value;
+            const note = document.getElementById('note').value.trim();
+            
+            if (!isValidUPI(upiId)) {
+                alert('Invalid UPI ID! Please enter a correct format like example@upi.');
+                return;
+            }
+
+            upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR`;
+            if (note) {
+                upiLink += `&tn=${encodeURIComponent(note)}`;
+            }
+
+            document.getElementById('upiLink').innerHTML = `<a href="${upiLink}" target="_blank">${upiLink}</a>`;
+            
+            // Generate QR Code
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiLink)}`;
+            document.getElementById('qrCode').src = qrCodeUrl;
+            document.getElementById('qrCode').style.display = 'block';
+            
+            document.getElementById('shareBtn').style.display = 'block';
+        }
+
+        function copyUPILink() {
+            navigator.clipboard.writeText(upiLink).then(() => {
+                alert("UPI Link copied!");
+            }).catch(err => {
+                console.error("Failed to copy:", err);
+            });
+        }
+
+        function shareOnWhatsApp() {
+            const name = document.getElementById('name').value.trim();
+            const amount = document.getElementById('amount').value;
+            const note = document.getElementById('note').value.trim();
+            let message = `Pay ${name} ₹${amount} via UPI: ${upiLink}`;
+            if (note) {
+                message += `\nNote: ${note}`;
+            }
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+        }
+    </script>
+</body>
+</html>
